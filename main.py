@@ -1,48 +1,67 @@
-from enum import Enum
-
 import pygame
 import random
 import math
 import time
-import keyboard
-from shuffleimages import shuffle
+# from shuffleimages import shuffle
 from pygame import mixer
-from pynput.keyboard import Key, Controller
+from enum import Enum
 
 
+# class(Enum)ปกด.nameกับvalue ใช้ใน random_animal()
 class Type(Enum):
     BOMB = 0
-    DOG = 1
-    DOG_SICK = 2
-    CAT = 3
+    CAT = 1
+    DOG = 2
+    DOG_SICK = 3
 
 
-class Animal():
+class Animal:
     def __init__(self, height):
-        self.type = random.randint(0, 3)
-        # self.img = pygame.image.load(shuffle())
-        self.img = pygame.image.load(self.get_img())
-        # self.score = 1
-        self.score = self.get_score()
-        self.location_x = random.randint(100, 700)
-        self.location_y = height
+        self.location_x = random.randint(100, 700)  # สุ่มตน.xที่จะตก
+        self.location_y = height  # ตน.yที่สัตว์จะตก
         self.location_x_change = 0
-        self.location_y_change = 2.5  #ความเร็วสัตว์ตก
+        self.location_y_change = 2.5  # ความเร็วสัตว์ตก
+        self.img = pygame.image.load(self.get_img())
+        self.score = self.get_score()
 
     def get_img(self):
-        images = ['assets/bomb.png', 'assets/dog.png', 'assets/dog-yellow.png', 'assets/cat.png']
-        return images[self.type]
+        images = ['assets/cat.png', 'assets/dog.png']
+        return images[random.randint(0, 1)] #return str
 
     def get_score(self):
-        if self.type == Type.BOMB.value:
-            return -9999
-        elif self.type == Type.DOG_SICK.value:
-            return -2
-        else:
-            return 1
+        return 1
 
 
-class Player():
+class Bomb(Animal):
+    def __init__(self, height):
+        super().__init__(height)
+        self.location_y_change = 3.5  # ความเร็วสัตว์ตก
+        self.img = pygame.image.load(self.get_img())
+        self.score = self.get_score()
+
+    def get_img(self):
+        images = 'assets/bomb.png'
+        return images
+
+    def get_score(self):
+        return 0
+
+
+class SickAnimal(Animal):
+    def __init__(self, height):
+        super().__init__(height)
+        self.img = pygame.image.load(self.get_img())
+        self.score = self.get_score()
+
+    def get_img(self):
+        images = 'assets/dog-yellow.png'
+        return images
+
+    def get_score(self):
+        return -2
+
+
+class Player:
     def __init__(self):
         self.img = pygame.image.load('assets/basket.png')
         self.location_x = 350
@@ -50,10 +69,10 @@ class Player():
         self.location_x_change = 0
 
 
-# Initialize the pygame #เซทค่าเริ่มต้นเกม
+# Initialize the pygame # เซทค่าเริ่มต้นเกม
 pygame.init()
 
-# Set game screen #เซทหน้าจอเกมกว้าง,สูงพิกเซล
+# Set game screen # เซทหน้าจอเกมกว้าง,สูงพิกเซล
 screen = pygame.display.set_mode((800, 600))
 
 # Background
@@ -70,40 +89,29 @@ icon = pygame.image.load('assets/rain.png')  # กำหนดตัวแปร
 pygame.display.set_icon(icon)  # แสดงรูปบนไอคอน
 
 # PLAYER
-# playerImg = pygame.image.load('assets/basket.png')
-
 # Position basket at bottom centre
-# playerX = 350
-# playerY = 480
-# playerX_change = 0
 player = Player()
 
 # CAT/DOG
 total_animal_rain = 2
 animals = []
-# animalImg = []
-# animalX = []amount
-# animalY = []
-# animalX_change = []
-# animalY_change = []
 height = 0
 
-keyboard = Controller()
-key = "a"
-# keyboard.press(key)
-# keyboard.release(key)
+
+def random_animal(height):
+    animal_type = random.randint(0, 3)
+    if animal_type == Type.BOMB.value:
+        animal = Bomb(height)  # สร้าง
+    elif animal_type == Type.DOG_SICK.value:
+        animal = SickAnimal(height)
+    else:
+        animal = Animal(height)
+    return animal
+
 
 for i in range(total_animal_rain):
-    # url = shuffle()
-    # animalImg.append(pygame.image.load(url))
-    #  create object animal
-    animal = Animal(height)
-    animals.append(animal)
-    # Position animal randomly at top
-    # animalX.append(random.randint(100,700))
-    # animalY.append(height)
-    # animalX_change.append(0)
-    # animalY_change.append(3) #ความเร็วสัตว์ตก
+    animal = random_animal(height)
+    animals.append(animal)  # เอา animal ที่สุ่มได้ใส่ลงไปใน []
 
     height += 200
 
@@ -123,15 +131,15 @@ def isCollision(animal, player):
     # distance = math.sqrt(math.pow(animal.location_x - playerX, 2) + math.pow(animal.location_y - playerY, 2))
     distance = math.sqrt(math.pow(animal.location_x - player.location_x, 2) + math.pow(animal.location_y - player.location_y, 2))
 
-    x_distance = abs(player.location_x - animal.location_x)
+    x_distance = abs(player.location_x - animal.location_x)  # หาระยะห่างของตะกร้ากับสัตว์
     y_distance = abs(player.location_y - animal.location_y)
 
-    if distance < 60:
-        return True
+    if distance < 60: #ระยะระหว่าง animal กับ player
+        return True  #ชนกัน
     elif x_distance < 80 and y_distance < 40:
         return True
     else:
-        return False
+        return False  # ไม่ชนตะกร้า
 
 
 # Score
@@ -154,7 +162,7 @@ def showTime(time):
     minutes = time // 60
     seconds = time % 60
 
-    if (seconds < 10):
+    if seconds < 10:
         time = font.render("TIME " + str(minutes) + ":0" + str(seconds), True, (10, 10, 10))
     else:
         time = font.render("TIME " + str(minutes) + ":" + str(seconds), True, (10, 10, 10))
@@ -169,33 +177,52 @@ def game_over():
     gameover_sound = mixer.Sound('assets/GameOver.flac')
     gameover_sound.play()
     for i in range(total_animal_rain):
-        animals[i].location_y = 2000
+        animals[i].location_y = 2000  # สัตว์ตกลงไปแล้ว
 
 
 def game_over_text():
-    game_over = over_font.render("GAME OVER", True, (10, 10, 10))
-    screen.blit(game_over, (200, 380))
+    text = over_font.render("GAME OVER", True, (10, 10, 10))
+    screen.blit(text, (200, 380))
     mixer.music.stop()
 
 
+# Press any key to start
+press_font = pygame.font.Font('freesansbold.ttf', 48)
 
-# Game loop (persistence of game screen)
+# Game loop
+wait = True
 running = True
 
-while running:  # ขึ้นหน้าจอเกมหลังจากrunบรรทัดที่150-->184-->185-->186-->189
+while wait:
+    # Background (R,G,B)
+    screen.fill((26, 152, 201))
+    screen.blit(background, (0, 0))  # เรียก bg
+
+    text = press_font.render("PRESS ANY KEY TO START", True, (10, 10, 10))
+    screen.blit(text, (80, 400))
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:  # ถ้ามีการปิดหน้าต่างจะสั่งให้เกมจบลง
+            running = False
+            wait = False
+        if event.type == pygame.KEYDOWN:
+            wait = False
+
+    # Continually update game screen
+    pygame.display.update()
+
+while running:  # ขึ้นหน้าจอเกม
     
     # Background (R,G,B)
     screen.fill((26, 152, 201))
-    screen.blit(background, (0, 0))  # เรียกbackgroundมาแสดงเริ่มจากจุด0,0
+    screen.blit(background, (0, 0))  # เรียก background มาแสดงเริ่มจากจุด0,0
     # Defining every possible event occurence in game screen
-    for event in pygame.event.get():  # วนลูปเพื่อตรวจสอบว่ามีeventใดเกิดขึ้นแล้วให้ทำงานตามeventนั้นๆ
+    for event in pygame.event.get():  # วนลูปเพื่อตรวจสอบว่ามี event ใดเกิดขึ้นแล้วให้ทำงานตามeventนั้นๆ
        
         # Quitting application ขึ้นหน้าจอสีดำ
         if event.type == pygame.QUIT:  # ถ้ามีการปิดหน้าต่างจะสั่งให้เกมจบลง
             running = False  # หยุดลูป
 
         # Checking keystrokes (pressing down a key)
-        
         if event.type == pygame.KEYDOWN:
                 
             # Left key pressed
@@ -217,34 +244,27 @@ while running:  # ขึ้นหน้าจอเกมหลังจากru
                 player.location_x_change = 0
 
     # Updating basket position horizontally
-    # playerX += playerX_change
     player.location_x += player.location_x_change
     
     # Adding boundaries
-    # if playerX <= 0:
-    #     playerX = 0
     if player.location_x <= 0:
         player.location_x = 0
 
-    # if playerX >= 670:
-    #     playerX = 670
     if player.location_x >= 670:
         player.location_x = 670
 
     for i in range(total_animal_rain):
         # Updating animal direction vertically
-        # if animalY[i] <= 536:
-        #     animalY[i] += animalY_change[i]
         animal = animals[i]
         if animal.location_y <= 536:
-            animal.location_y += animal.location_y_change
+            animal.location_y += animal.location_y_change  #เปลี่ยนตำแหน่งสิ่งของในแกนy
 
         # Collision
         collision = isCollision(animal, player)
 
-        if collision:  # สัตว์ชนตระกร้า
+        if collision:  # สัตว์ชนตระกร้า ดูว่า return ได้อะไรออกมาจาก def isCollision ; collision = True
             # score_value +=1
-            if animal.type == Type.BOMB.value:
+            if isinstance(animal, Bomb):  # check ว่า animal = Bomb
                 game_over()
             else:
                 score_value += animal.score
@@ -252,9 +272,7 @@ while running:  # ขึ้นหน้าจอเกมหลังจากru
                 score_sound = mixer.Sound('assets/PointScore.wav')
                 score_sound.play()
 
-                # animalX[i] = random.randint(0,736)  #ชนแล้วเกิดใหม่สุ่มx
-                # animalY[i] = 30  #เกิดใหม่ที่y=30
-                animals[i] = Animal(30)
+                animals[i] = random_animal(30)
 
         # TIMER
         if (animal.location_y < 534):
@@ -262,8 +280,8 @@ while running:  # ขึ้นหน้าจอเกมหลังจากru
 
         # GameOver
         if 534 <= animal.location_y < 534 + animal.location_y_change:
-            if animal.type in [Type.BOMB.value, Type.DOG_SICK.value]:
-                animals[i] = Animal(30)
+            if isinstance(animal, Bomb) or isinstance(animal, SickAnimal):
+                animals[i] = random_animal(30)
             else:
                 game_over()
 
